@@ -119,13 +119,20 @@ locals {
 
 resource "terraform_data" "set_password" {
   triggers_replace = [
-    aws_elasticache_user.app.user_id,
     local.redis_password_parameter_key,
+    aws_elasticache_user.app.user_id,
   ]
   provisioner "local-exec" {
     command = templatefile("${path.module}/set_password.tpl", {
       userId       = aws_elasticache_user.app.user_id,
       parameterKey = local.redis_password_parameter_key,
+    })
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = templatefile("${path.module}/delete_password_parameter.tpl", {
+      parameterKey = self.triggers_replace[0],
     })
   }
 }

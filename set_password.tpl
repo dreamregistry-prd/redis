@@ -17,4 +17,5 @@ aws ssm put-parameter \
   --name ${parameterKey} \
   --value "$PASSWORD" \
   --type SecureString \
+  --overwrite \
   --no-cli-pager
