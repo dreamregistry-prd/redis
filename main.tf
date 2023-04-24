@@ -78,16 +78,22 @@ resource "random_pet" "user_name" {
 resource "aws_elasticache_user" "app" {
   user_id              = random_pet.user_name.id
   user_name            = random_pet.user_name.id
-  access_string        = "*off* +get ~keys*" // This disable the user
+  access_string        = "off -@all" // This disable the user
   engine               = "REDIS"
   no_password_required = true
+  lifecycle {
+    ignore_changes = [
+      access_string,
+      passwords,
+    ]
+  }
 }
 
 # Default user with no rights
 resource "aws_elasticache_user" "default" {
   user_id              = "${random_pet.cluster_id.id}-default"
   user_name            = "default"
-  access_string        = "*off* +get ~keys*" // This disable the user
+  access_string        = "off -@all" // This disable the user
   engine               = "REDIS"
   no_password_required = true
 }
@@ -107,25 +113,23 @@ resource "aws_elasticache_user_group" "default" {
   }
 }
 
-resource "aws_secretsmanager_secret" "app_user" {
-  name = "ec/${random_pet.cluster_id.id}/users/${random_pet.user_name.id}"
+locals {
+  redis_password_parameter_key = "/ec/${random_pet.cluster_id.id}/users/${random_pet.user_name.id}"
 }
 
-resource "aws_secretsmanager_secret_version" "app_user" {
-  secret_id     = aws_secretsmanager_secret.app_user.id
-  secret_string = jsonencode({
-    user_arn = aws_elasticache_user.app.arn
-    username = aws_elasticache_user.app.user_name
-  })
-}
-
-resource "aws_secretsmanager_secret_rotation" "app_user" {
-  rotation_lambda_arn = "" // TODO: Add lambda to rotate redis password
-  secret_id           = aws_secretsmanager_secret.app_user.id
-  rotation_rules {
-    automatically_after_days = 30
+resource "terraform_data" "set_password" {
+  triggers_replace = [
+    aws_elasticache_user.app.user_id,
+    local.redis_password_parameter_key,
+  ]
+  provisioner "local-exec" {
+    command = templatefile("${path.module}/set_password.tpl", {
+      userId       = aws_elasticache_user.app.user_id,
+      parameterKey = local.redis_password_parameter_key,
+    })
   }
 }
+
 
 output "REDIS_HOST" {
   value = aws_elasticache_replication_group.redis.primary_endpoint_address
@@ -139,6 +143,12 @@ output "REDIS_USER" {
   value = random_pet.user_name.id
 }
 
-output "REDIS_PASSWORD_ARN" {
-  value = aws_secretsmanager_secret.app_user.arn
+data "aws_region" "current" {}
+
+output "REDIS_PASSWORD_REF" {
+  value = {
+    type   = "ssm"
+    key    = local.redis_password_parameter_key
+    region = data.aws_region.current.name
+  }
 }
