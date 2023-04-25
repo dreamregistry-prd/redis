@@ -1,5 +1,5 @@
 terraform {
-  #  backend "s3" {}
+  backend "s3" {}
 
   required_providers {
     aws = {
@@ -152,7 +152,7 @@ output "REDIS_USER" {
 
 data "aws_region" "current" {}
 
-output "REDIS_PASSWORD_REF" {
+output "REDIS_PASSWORD" {
   value = {
     type   = "ssm"
     key    = local.redis_password_parameter_key
