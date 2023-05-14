@@ -159,3 +159,7 @@ output "REDIS_PASSWORD" {
     region = data.aws_region.current.name
   }
 }
+
+output "REDIS_TLS" {
+  value = true
+}
