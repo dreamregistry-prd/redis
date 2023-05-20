@@ -137,6 +137,10 @@ resource "terraform_data" "set_password" {
   }
 }
 
+data "aws_ssm_parameter" "redis_password" {
+  name = local.redis_password_parameter_key
+}
+
 
 output "REDIS_HOST" {
   value = aws_elasticache_replication_group.redis.primary_endpoint_address
@@ -157,6 +161,7 @@ output "REDIS_PASSWORD" {
     type   = "ssm"
     key    = local.redis_password_parameter_key
     region = data.aws_region.current.name
+    arn    = data.aws_ssm_parameter.redis_password.arn
   }
 }
 
