@@ -127,6 +127,7 @@ resource "terraform_data" "set_password" {
       userId       = aws_elasticache_user.app.user_id,
       parameterKey = local.redis_password_parameter_key,
     })
+    interpreter = ["bash", "-c"]
   }
 
   provisioner "local-exec" {
@@ -134,6 +135,7 @@ resource "terraform_data" "set_password" {
     command = templatefile("${path.module}/delete_password_parameter.tpl", {
       parameterKey = self.triggers_replace[0],
     })
+    interpreter = ["bash", "-c"]
   }
 }
 
