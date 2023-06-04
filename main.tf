@@ -140,6 +140,7 @@ resource "terraform_data" "set_password" {
 }
 
 data "aws_ssm_parameter" "redis_password" {
+  depends_on = [terraform_data.set_password]
   name = local.redis_password_parameter_key
 }
 
