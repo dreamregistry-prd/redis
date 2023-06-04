@@ -150,7 +150,7 @@ output "REDIS_HOST" {
 }
 
 output "REDIS_PORT" {
-  value = aws_elasticache_replication_group.redis.port
+  value = aws_elasticache_replication_group.redis.port == null ? 6379 : aws_elasticache_replication_group.redis.port
 }
 
 output "REDIS_USER" {
